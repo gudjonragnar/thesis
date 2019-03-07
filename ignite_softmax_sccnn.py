@@ -6,7 +6,7 @@ import numpy as np
 import os
 
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-from ignite.metrics import Accuracy, Loss
+from ignite.metrics import Accuracy, Loss, Precision, Recall
 from ignite.handlers import ModelCheckpoint
 from ignite.contrib.handlers.param_scheduler import LRScheduler
 from torch.optim.lr_scheduler import MultiStepLR
@@ -23,8 +23,10 @@ class softmaxSCCNN(nn.Module):
         # Globals
         self.num_classes = num_classes
         self.p = dropout_p
+        self.class_weights = loss_weights
         if not criterion:
-            self.criterion = nn.CrossEntropyLoss(weight=loss_weights)
+            # self.criterion = nn.CrossEntropyLoss(weight=loss_weights)
+            self.criterion = nn.NLLLoss(weight=self.class_weights)
 
 
         # Layers
@@ -33,54 +35,6 @@ class softmaxSCCNN(nn.Module):
         self.fc1 = nn.Linear(5*5*48,512)
         self.fc2 = nn.Linear(512,512)
         self.fc3 = nn.Linear(512,self.num_classes)
-
-
-    def save_model(self, filename='model/{}.pth', all=False):
-        """
-        Saves the model. If _all_ is true then it will save the whole model, otherwise only its parameters.
-        """
-        if all:
-            torch.save(self, filename.format('model'))
-        else:
-            torch.save(self.state_dict(), filename.format('statedict'))
-
-    def load_model(self, filename, all=False):
-        """
-        Loads a model. If _all_ is true then it will load a whole model, otherwise only its parameters.
-        Puts the model into evaluation mode.
-        """
-        if all:
-            self = torch.load(filename.format('model'))
-        else:
-            self.load_state_dict(torch.load(filename))
-        self.eval()
-
-    def save_checkpoint(self, epoch, optimizer, criterion ,filename='checkpoints/model_{}.tar'):
-        """
-        Saves the model along with the current training parameters for further training.
-        Good to save regularly during training in case of failure or if manual tweaking is wanted.
-        """
-        from datetime import datetime
-
-        current_datetime = datetime.now().strftime('%Y-%m-%d_%H_%M')
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': self.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss_criterion': criterion
-            }, filename.format(current_datetime))
-
-    def load_checkpoint(self, filename):
-        """
-        Returns the loaded checkpoint dictionary detailed in the save_checkpoint method
-        and sets the model parameters and loss criterion to those of the checkpoint.
-        The return value can be used to continue training, as inputs to the train_model method.
-        """
-        checkpoint_dict = torch.load(filename)
-        self.load_state_dict(checkpoint_dict['model_state_dict'])
-        self.criterion = checkpoint_dict['loss_criterion']
-        return checkpoint_dict
-
 
     def forward(self, X):
         """
@@ -95,8 +49,9 @@ class softmaxSCCNN(nn.Module):
         y = F.dropout(y, p=self.p)
         y = F.relu(self.fc2(y))
         y = F.dropout(y, p=self.p)
-        # y = F.softmax(self.fc3(y), dim=1)
-        y = self.fc3(y)
+        y = F.log_softmax(self.fc3(y), dim=1)
+        
+        # y = self.fc3(y)
 
         return y
 
@@ -108,9 +63,6 @@ class softmaxSCCNN(nn.Module):
         out = F.softmax(self.forward(data), dim=1)
         out_choices = torch.argmax(out, 1)
         correct_percentage = torch.sum(torch.where(target==out_choices,torch.tensor(1.),torch.tensor(0.)))/len(target)
-        if np.random.rand() < 0.05 and False:
-            print(target)
-            print(out_choices)
         return correct_percentage
     
 
@@ -122,21 +74,47 @@ class softmaxSCCNN(nn.Module):
         if init:
             self.apply(init_weights)
         trainer = create_supervised_trainer(self, optimizer, self.criterion)
-        evaluator = create_supervised_evaluator(self, metrics={'accuracy': Accuracy(), 'loss':Loss(self.criterion)})
+        evaluator = create_supervised_evaluator(self, 
+            metrics={'accuracy': Accuracy(), 'precision': Precision(), 'recall': Recall(), 'loss': Loss(self.criterion)})
 
         step_scheduler = MultiStepLR(optimizer, milestones=[60, 100], gamma=0.1)
         scheduler = LRScheduler(step_scheduler)
 
+        # Print out metrics with some defined interval (if statement)
         @trainer.on(Events.EPOCH_COMPLETED)
         def validate(trainer):
-            if trainer.state.iteration % 1 == 0:
+            if trainer.state.epoch % 1 == 0:
                 evaluator.run(val_loader)
                 metrics = evaluator.state.metrics
-                print("After {} epochs, accuracy = {:.4f}, loss = {:.6f}".format(trainer.state.epoch, metrics['accuracy'], metrics['loss']))
+                F1 = (2*metrics['precision']*metrics['recall']/(metrics['precision']+metrics['recall'])).numpy()
+                F1[np.isnan(F1)] = 0
+                print(
+                    ("After {} epochs, Accuracy = {:.4f}, Loss = {:.6f}\n\t Prec\t={}\n\t Recall\t={}\n\t"+ \
+                        "F1\t={}\n\t Weighted Average F1 score: {}\n")
+                    .format(trainer.state.epoch, 
+                        metrics['accuracy'], 
+                        metrics['loss'], 
+                        metrics['precision'].numpy(), 
+                        metrics['recall'].numpy(),
+                        F1,
+                        np.sum(F1*self.class_weights.numpy())))
+        
+        # Check to see if the learning rate scheduler is working correctly
+        # @trainer.on(Events.EPOCH_COMPLETED)
+        def check_grads(trainer):
+            check = True
+            if trainer.state.epoch % 20 == 0 or trainer.state.epoch % 20 == 1:
+                for g in optimizer.param_groups:
+                    check = check and g['lr'] == 0.01
+                print('Learning rate check at epoch {} start is {}'.format(
+                trainer.state.epoch,
+                check
+            ))
+
         
         checkpointer = ModelCheckpoint('checkpoints', 'ignite', save_interval=10, create_dir=True, require_empty=False)
         trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': self})
-        # trainer.add_event_handler(Events.EPOCH_STARTED, scheduler)
+        trainer.add_event_handler(Events.EPOCH_STARTED, scheduler)
 
         print("Start training!")
         trainer.run(train_loader, max_epochs=max_epochs)
@@ -149,7 +127,7 @@ def change_lr(optim, new_lr):
 
 def init_weights(m):
     if type(m) == nn.Linear or type(m) == nn.Conv2d:
-        torch.nn.init.normal_(m.weight, std=0.01)
+        torch.nn.init.normal_(m.weight, std=0.02)
         m.bias.data.fill_(0.0)
 
 def init_weights_linear(m):
@@ -160,23 +138,25 @@ def init_weights_linear(m):
 
     
 if __name__ == "__main__":
+    num_classes = 4
+    batch_size = 100
+    num_workers = 4
     root_dir = '/Users/gudjonragnar/Documents/KTH/Thesis/CRCHistoPhenotypes_2016_04_28/Classification'
-    train_ds = ClassificationDataset(root_dir=root_dir, train=True, shift=4.)
-    train_dl = DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=4)
+    train_ds = ClassificationDataset(root_dir=root_dir, train=True)
+    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
     test_ds = ClassificationDataset(root_dir=root_dir, train=False)
-    test_dl = DataLoader(test_ds, batch_size=32, num_workers=4)
+    test_dl = DataLoader(test_ds, batch_size=batch_size, num_workers=num_workers)
 
     class_weight_dict = np.load(os.path.join(root_dir,'class_weights.npy')).item()
-    class_weights = torch.tensor([class_weight_dict[i]/class_weight_dict['total'] for i in range(4)], dtype=torch.float)
-    net = softmaxSCCNN(loss_weights=class_weights)
+    class_weights = torch.tensor([class_weight_dict[i]/class_weight_dict['total'] for i in range(num_classes)], dtype=torch.float)
+    net = softmaxSCCNN(loss_weights=class_weights, num_classes=num_classes)
 
     # data = torch.rand(3,3,27,27)
 
-    # optimizer = torch.optim.Adam(net.parameters(), lr=0.1, weight_decay=5e-4)
+    # optimizer = torch.optim.Adam(net.parameters(), lr=10)
     # optimizer = torch.optim.Adam(net.parameters(), lr=1, weight_decay=5e-4)
     optimizer = torch.optim.SGD(net.parameters(), lr=0.01, weight_decay=5e-4, momentum=0.9)
-
 
     def t(n=3):
         net.train_model(train_dl, optimizer, max_epochs=n, val_loader=test_dl)

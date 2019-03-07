@@ -17,37 +17,31 @@ class_count = defaultdict(int)
 dirs_train = []
 dirs_test = []
 
-# train_dict = defaultdict(list)
-# test_dict = defaultdict(list)
-train_list = []
-test_list = []
+train_dict = defaultdict(list)
+test_dict = defaultdict(list)
 
+others_counter = 0
 counter = 0
 test_counter = 0
-multiplier = 3
 for j, d in enumerate(dirs):
     filename = d+'_{}.mat'
     mats = [scipy.io.loadmat(os.path.join(root_dir,d,filename.format(m)))['detection'] for m in mat_names]
     for i,m in enumerate(mats):
         for item in m:
-            l = [d, item, classes[mat_names[i]]]
+            l = [d, item, 0 if i<2 else 1]
+            if l[2] == 0:
+                others_counter += 1
             if j < 80:
                 class_count[i] += 1
                 class_count['total'] += 1
-                # train_dict[counter] = l
-                for _ in range(multiplier):
-                    train_list.append(l)
+                train_dict[counter] = l
                 counter += 1
             else:
-                # test_dict[test_counter] = l
-                test_list.append(l)
+                test_dict[test_counter] = l
                 test_counter += 1
 
-np.random.shuffle(train_list)
-np.random.shuffle(test_list)
 
-# np.save(os.path.join(root_dir,'train_dict.npy'), train_dict)
-# np.save(os.path.join(root_dir,'test_dict.npy'), test_dict)
-np.save(os.path.join(root_dir,'train_list.npy'), train_list)
-np.save(os.path.join(root_dir,'test_list.npy'), test_list)
+np.save(os.path.join(root_dir,'train_dict.npy'), train_dict)
+np.save(os.path.join(root_dir,'test_dict.npy'), test_dict)
 np.save(os.path.join(root_dir,'class_weights.npy'), class_count)
+# print(others_counter)
