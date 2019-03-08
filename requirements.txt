@@ -19,7 +19,7 @@ numpy==1.16.1
 Pillow==5.4.1
 protobuf==3.6.1
 pylint==2.2.2
-pytorch-ignite==0.2.0
+pytorch-ignite==0.1.2
 requests==2.21.0
 rope==0.12.0
 scipy==1.2.1

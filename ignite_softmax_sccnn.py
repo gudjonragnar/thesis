@@ -4,11 +4,12 @@ import torch.nn.functional as F
 import torchvision
 import numpy as np
 import os
+import time
 
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss, Precision, Recall
 from ignite.handlers import ModelCheckpoint
-from ignite.contrib.handlers.param_scheduler import LRScheduler
+# from ignite.contrib.handlers.param_scheduler import LRScheduler
 from torch.optim.lr_scheduler import MultiStepLR
 
 from torch.utils.data import DataLoader
@@ -77,8 +78,8 @@ class softmaxSCCNN(nn.Module):
         evaluator = create_supervised_evaluator(self, 
             metrics={'accuracy': Accuracy(), 'precision': Precision(), 'recall': Recall(), 'loss': Loss(self.criterion)})
 
-        step_scheduler = MultiStepLR(optimizer, milestones=[60, 100], gamma=0.1)
-        scheduler = LRScheduler(step_scheduler)
+        # step_scheduler = MultiStepLR(optimizer, milestones=[60, 100], gamma=0.1)
+        # scheduler = LRScheduler(step_scheduler)
 
         # Print out metrics with some defined interval (if statement)
         @trainer.on(Events.EPOCH_COMPLETED)
@@ -114,7 +115,7 @@ class softmaxSCCNN(nn.Module):
         
         checkpointer = ModelCheckpoint('checkpoints', 'ignite', save_interval=10, create_dir=True, require_empty=False)
         trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': self})
-        trainer.add_event_handler(Events.EPOCH_STARTED, scheduler)
+        # trainer.add_event_handler(Events.EPOCH_STARTED, scheduler)
 
         print("Start training!")
         trainer.run(train_loader, max_epochs=max_epochs)
@@ -140,8 +141,8 @@ def init_weights_linear(m):
 if __name__ == "__main__":
     num_classes = 4
     batch_size = 100
-    num_workers = 4
-    root_dir = '/Users/gudjonragnar/Documents/KTH/Thesis/CRCHistoPhenotypes_2016_04_28/Classification'
+    num_workers = 8
+    root_dir = '../CRCHistoPhenotypes_2016_04_28/Classification'
     train_ds = ClassificationDataset(root_dir=root_dir, train=True)
     train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
@@ -159,9 +160,12 @@ if __name__ == "__main__":
     optimizer = torch.optim.SGD(net.parameters(), lr=0.01, weight_decay=5e-4, momentum=0.9)
 
     def t(n=3):
+        time1 = time.time()
         net.train_model(train_dl, optimizer, max_epochs=n, val_loader=test_dl)
         # net.train_model(train_dl, optimizer, num_epochs=n, val_loader=None)
+        time2 = time.time()
+        print("It took {:.5f} seconds to train {} epochs, average of {:.5f} sec/epoch".format((time2-time1), n, (time2-time1)/n))
 
-    t(120)
+    t(60)
 
 

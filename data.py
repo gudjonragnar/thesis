@@ -8,7 +8,6 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from PIL import Image
-from combine_all import read_dict
 from mark_centers import mark_cen
 
 class ClassificationDataset(Dataset):

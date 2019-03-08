@@ -7,7 +7,7 @@ from collections import defaultdict
 def read_dict(filename):
     return np.load(filename).item()
 
-root_dir = '/Users/gudjonragnar/Documents/KTH/Thesis/CRCHistoPhenotypes_2016_04_28/Classification'
+root_dir = '../CRCHistoPhenotypes_2016_04_28/Classification'
 dirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
 mat_names = ['others', 'fibroblast', 'epithelial', 'inflammatory']
 
@@ -24,7 +24,7 @@ test_list = []
 
 counter = 0
 test_counter = 0
-multiplier = 3
+multiplier = 5
 for j, d in enumerate(dirs):
     filename = d+'_{}.mat'
     mats = [scipy.io.loadmat(os.path.join(root_dir,d,filename.format(m)))['detection'] for m in mat_names]
