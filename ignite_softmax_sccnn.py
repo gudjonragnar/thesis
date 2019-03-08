@@ -105,14 +105,22 @@ class softmaxSCCNN(nn.Module):
         # @trainer.on(Events.EPOCH_COMPLETED)
         def check_grads(trainer):
             check = True
-            if trainer.state.epoch % 20 == 0 or trainer.state.epoch % 20 == 1:
+            max_lr = 0.
+            if True:
                 for g in optimizer.param_groups:
                     check = check and g['lr'] == 0.01
-                print('Learning rate check at epoch {} start is {}'.format(
+                    max_lr = g['lr']
+                print('Biggest learning rate at epoch {} start is {}'.format(
                 trainer.state.epoch,
-                check
+                max_lr
             ))
 
+        # Instead of the LR scheduler, since it was not possible to successfully
+        # install from github on tcs111
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def anneal_lr(trainer):
+            if trainer.state.epoch in params.lr_decay_epochs:
+                change_lr(optimizer)
         
         checkpointer = ModelCheckpoint('checkpoints', 'ignite', save_interval=10, create_dir=True, require_empty=False)
         trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': self})
@@ -123,9 +131,9 @@ class softmaxSCCNN(nn.Module):
         print("Training finished")
 
 
-def change_lr(optim, new_lr):
+def change_lr(optim, gamma=0.1):
     for g in optim.param_groups:
-        g['lr'] = new_lr
+        g['lr'] *= gamma
 
 def init_weights(m):
     if type(m) == nn.Linear or type(m) == nn.Conv2d:

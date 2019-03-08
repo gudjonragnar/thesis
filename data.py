@@ -31,8 +31,8 @@ class ClassificationDataset(Dataset):
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
                 transforms.ColorJitter(hue=0.05, saturation=0.1, brightness=0.1),
-                transforms.ToTensor(),
-                transforms.Normalize(_mean, _std)
+                transforms.ToTensor()
+                # transforms.Normalize(_mean, _std)
             ])
         self.offset = np.array([13,13])
         self.coarse_crop = 41
