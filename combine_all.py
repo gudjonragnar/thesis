@@ -25,7 +25,7 @@ test_list = []
 
 counter = 0
 test_counter = 0
-multiplier = 5
+multiplier = params.multiples
 for j, d in enumerate(dirs):
     filename = d+'_{}.mat'
     mats = [scipy.io.loadmat(os.path.join(root_dir,d,filename.format(m)))['detection'] for m in mat_names]
