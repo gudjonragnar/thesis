@@ -4,6 +4,7 @@ import torch.nn as nn
 import imageio
 import scipy.io
 import numpy as np
+import params
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
@@ -76,7 +77,7 @@ class ClassificationDataset(Dataset):
         return (net_input, target)
 
 if __name__ == '__main__':
-    ds = ClassificationDataset(root_dir='/Users/gudjonragnar/Documents/KTH/Thesis/CRCHistoPhenotypes_2016_04_28/Classification')
+    ds = ClassificationDataset(root_dir=params.root_dir)
     item = ds.__getitem__(100)
     utils.save_image(item[0], filename='/Users/gudjonragnar/Desktop/test.png')
     print(item[1])

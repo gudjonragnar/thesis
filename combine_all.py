@@ -1,13 +1,14 @@
 import scipy.io
 import numpy as np 
 import os
+import params
 
 from collections import defaultdict
 
 def read_dict(filename):
     return np.load(filename).item()
 
-root_dir = '../CRCHistoPhenotypes_2016_04_28/Classification'
+root_dir = params.root_dir
 dirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
 mat_names = ['others', 'fibroblast', 'epithelial', 'inflammatory']
 

@@ -5,6 +5,7 @@ import torchvision
 import numpy as np
 import os
 import time
+import params
 
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss, Precision, Recall
@@ -139,10 +140,10 @@ def init_weights_linear(m):
 
     
 if __name__ == "__main__":
-    num_classes = 4
-    batch_size = 100
-    num_workers = 8
-    root_dir = '../CRCHistoPhenotypes_2016_04_28/Classification'
+    num_classes = params.num_classes
+    batch_size = params.batch_size
+    num_workers = params.num_workers
+    root_dir = params.root_dir
     train_ds = ClassificationDataset(root_dir=root_dir, train=True)
     train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
@@ -157,7 +158,10 @@ if __name__ == "__main__":
 
     # optimizer = torch.optim.Adam(net.parameters(), lr=10)
     # optimizer = torch.optim.Adam(net.parameters(), lr=1, weight_decay=5e-4)
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.01, weight_decay=5e-4, momentum=0.9)
+    optimizer = torch.optim.SGD(net.parameters(), 
+        lr=params.lr, 
+        weight_decay=params.weight_decay,
+        momentum=params.momentum)
 
     def t(n=3):
         time1 = time.time()
@@ -166,6 +170,6 @@ if __name__ == "__main__":
         time2 = time.time()
         print("It took {:.5f} seconds to train {} epochs, average of {:.5f} sec/epoch".format((time2-time1), n, (time2-time1)/n))
 
-    t(60)
+    t(params.epochs)
 
 

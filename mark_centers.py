@@ -3,8 +3,9 @@ from PIL import Image
 import os
 from torchvision.transforms.functional import crop
 import scipy.io
+import params
 
-root_dir='/Users/gudjonragnar/Documents/KTH/Thesis/CRCHistoPhenotypes_2016_04_28/Classification'
+root_dir=params.root_dir
 
 til = Image.new('RGB',(2,2), (250,0,0))
 
@@ -31,9 +32,9 @@ def crop_(img, center, offset=np.array([13,13]), size=[27,27]):
     return cropped_1, cropped_2
 
 if __name__ == '__main__':
-        img, centers = load('img8')
-        mark_cen(img, centers)
-        img.show()
+    img, centers = load('img8')
+    mark_cen(img, centers)
+    img.show()
 
 
 
