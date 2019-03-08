@@ -55,17 +55,18 @@ class ClassificationDataset(Dataset):
         center = item[1].astype(float)
         if self.shift:
             center += np.random.uniform(0-self.shift,self.shift, size=(2,)).astype(float)
-        center = np.round_(np.array(center)).astype(int)+self.coarse_offset
+        center = np.round_(np.array(center)).astype(int) + int((self.coarse_crop-1)/2) 
 
         # left_top = np.maximum.reduce([center - self.offset, np.zeros(2)])
-        # cropped_img = transforms.functional.crop(img_pil,*left_top[::-1], self.width, self.height)
+        left_top = center-self.offset
+        cropped_img = transforms.functional.crop(img_pil,*left_top[::-1], self.width, self.height)
 
-        coarse_left_top = center-self.coarse_offset
-        cropped_img = transforms.functional.crop(img_pil,*coarse_left_top[::-1],self.coarse_crop,self.coarse_crop)
+        # coarse_left_top = center-self.coarse_offset
+        # cropped_img = transforms.functional.crop(img_pil,*coarse_left_top[::-1],self.coarse_crop,self.coarse_crop)
         cropped_img = transforms.functional.rotate(cropped_img, np.random.choice(self.rotations))
-        coarse_center = (np.array(cropped_img.size)-1)/2
-        left_top = coarse_center-self.offset
-        cropped_img = transforms.functional.crop(cropped_img, *left_top[::-1], self.width, self.height)
+        # coarse_center = (np.array(cropped_img.size)-1)/2
+        # left_top = coarse_center-self.offset
+        # cropped_img = transforms.functional.crop(cropped_img, *left_top[::-1], self.width, self.height)
 
         if self.transform and self.train:
             net_input = self.transform(cropped_img)
@@ -78,7 +79,7 @@ class ClassificationDataset(Dataset):
 
 if __name__ == '__main__':
     ds = ClassificationDataset(root_dir=params.root_dir)
-    item = ds.__getitem__(100)
+    item = ds.__getitem__(np.random.randint(0,len(ds)))
     utils.save_image(item[0], filename='/Users/gudjonragnar/Desktop/test.png')
     print(item[1])
 
