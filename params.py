@@ -7,3 +7,4 @@ weight_decay=5e-4
 momentum = 0.9
 batch_size = 100
 epochs = 60
+multiples = 5

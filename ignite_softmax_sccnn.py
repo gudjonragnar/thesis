@@ -91,8 +91,8 @@ class softmaxSCCNN(nn.Module):
                 F1 = (2*metrics['precision']*metrics['recall']/(metrics['precision']+metrics['recall'])).numpy()
                 F1[np.isnan(F1)] = 0
                 print(
-                    ("After {} epochs, Accuracy = {:.4f}, Loss = {:.6f}\n\t Prec\t={}\n\t Recall\t={}\n\t"+ \
-                        "F1\t={}\n\t Weighted Average F1 score: {}\n")
+                    ("After {} epochs, Accuracy = {:.4f}, Loss = {:.6f}\n\tPrec\t={}\n\tRecall\t={}\n\t"+ \
+                        "F1\t={}\n\tWeighted Average F1 score: {}\n")
                     .format(trainer.state.epoch, 
                         metrics['accuracy'], 
                         metrics['loss'], 
