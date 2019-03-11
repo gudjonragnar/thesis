@@ -26,9 +26,6 @@ class softmaxSCCNN(nn.Module):
         self.num_classes = num_classes
         self.p = dropout_p
         self.class_weights = loss_weights
-        if not criterion:
-            # self.criterion = nn.CrossEntropyLoss(weight=loss_weights)
-            self.criterion = nn.NLLLoss(weight=self.class_weights)
 
 
         # Layers
@@ -67,17 +64,32 @@ class softmaxSCCNN(nn.Module):
         correct_percentage = torch.sum(torch.where(target==out_choices,torch.tensor(1.),torch.tensor(0.)))/len(target)
         return correct_percentage
     
+    # This function is to evaluate using the Neighbouring Ensamble Predictor (NEP)
+    # The input _nep_dataset_ will output a stack of predictions, one for each center-shift, along with the target
+    # We will wrap this with a dataloader with batch_size=1 and then combine the predictions for each batch. Finally we will compare
+    # def evaluate_NEP(self, nep_dataset):
 
-    def train_model(self, train_loader, optimizer, max_epochs, val_loader=None, init=True):
+    def load_model(self, filename, all=False):
+        """
+        Loads a model. If _all_ is true then it will load a whole model, otherwise only its parameters.
+        Puts the model into evaluation mode.
+        """
+        if all:
+            self = torch.load(filename.format('model'))
+        else:
+            self.load_state_dict(torch.load(filename))
+        self.eval()
+
+    def train_model(self, train_loader, optimizer, criterion, max_epochs, val_loader=None, init=True):
         """
         This method trains the model for _num_epochs_.
         _train_loader_ should be a DataLoader returning a tuple of (data, target).
         """
         if init:
             self.apply(init_weights)
-        trainer = create_supervised_trainer(self, optimizer, self.criterion)
+        trainer = create_supervised_trainer(self, optimizer, criterion)
         evaluator = create_supervised_evaluator(self, 
-            metrics={'accuracy': Accuracy(), 'precision': Precision(), 'recall': Recall(), 'loss': Loss(self.criterion)})
+            metrics={'accuracy': Accuracy(), 'precision': Precision(), 'recall': Recall(), 'loss': Loss(criterion)})
 
         # step_scheduler = MultiStepLR(optimizer, milestones=[60, 100], gamma=0.1)
         # scheduler = LRScheduler(step_scheduler)
@@ -122,7 +134,7 @@ class softmaxSCCNN(nn.Module):
             if trainer.state.epoch in params.lr_decay_epochs:
                 change_lr(optimizer)
         
-        checkpointer = ModelCheckpoint('checkpoints', 'ignite', save_interval=10, create_dir=True, require_empty=False)
+        checkpointer = ModelCheckpoint('checkpoints', 'sccnn', save_interval=5, create_dir=True, require_empty=False)
         trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': self})
         # trainer.add_event_handler(Events.EPOCH_STARTED, scheduler)
 
@@ -145,14 +157,12 @@ def init_weights_linear(m):
         torch.nn.init.normal_(m.weight, std=0.02)
         m.bias.data.fill_(0.0)
 
-
-    
 if __name__ == "__main__":
     num_classes = params.num_classes
     batch_size = params.batch_size
     num_workers = params.num_workers
     root_dir = params.root_dir
-    train_ds = ClassificationDataset(root_dir=root_dir, train=True)
+    train_ds = ClassificationDataset(root_dir=root_dir, train=True, shift=params.shift)
     train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
     test_ds = ClassificationDataset(root_dir=root_dir, train=False)
@@ -160,24 +170,29 @@ if __name__ == "__main__":
 
     class_weight_dict = np.load(os.path.join(root_dir,'class_weights.npy')).item()
     class_weights = torch.tensor([class_weight_dict[i]/class_weight_dict['total'] for i in range(num_classes)], dtype=torch.float)
-    net = softmaxSCCNN(loss_weights=class_weights, num_classes=num_classes)
+    model = softmaxSCCNN(loss_weights=class_weights, num_classes=num_classes)
 
     # data = torch.rand(3,3,27,27)
 
     # optimizer = torch.optim.Adam(net.parameters(), lr=10)
     # optimizer = torch.optim.Adam(net.parameters(), lr=1, weight_decay=5e-4)
-    optimizer = torch.optim.SGD(net.parameters(), 
+    optimizer = torch.optim.SGD(model.parameters(), 
         lr=params.lr, 
         weight_decay=params.weight_decay,
         momentum=params.momentum)
+    
+    criterion = nn.NLLLoss(weight=model.class_weights)
 
     def t(n=3):
         time1 = time.time()
-        net.train_model(train_dl, optimizer, max_epochs=n, val_loader=test_dl)
+        model.train_model(train_dl, optimizer, criterion, max_epochs=n, val_loader=test_dl)
         # net.train_model(train_dl, optimizer, num_epochs=n, val_loader=None)
         time2 = time.time()
         print("It took {:.5f} seconds to train {} epochs, average of {:.5f} sec/epoch".format((time2-time1), n, (time2-time1)/n))
 
+    # Uncomment for training
     t(params.epochs)
+
+
 
 
