@@ -104,5 +104,6 @@ venv.bak/
 .mypy_cache/
 
 # custom
-checkpoints/
+checkpoints*/
 params.py
+result.txt
