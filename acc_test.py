@@ -14,6 +14,7 @@ def handler(output):
     return torch.stack(stack), target
 
 model = softmaxSCCNN()
+model.save_model()
 nep_evaluator = create_supervised_evaluator(model, metrics={'acc': Accuracy(handler)})
 evaluator = create_supervised_evaluator(model, metrics={'acc': Accuracy()})
 
@@ -41,7 +42,8 @@ nep_metrics = nep_evaluator.state.metrics
 print('Single patch accuracy: {}, NEP accuracy: {}'.format(metrics['acc'], nep_metrics['acc']))
 
 print('Loading trained model!')
-model.load_model('checkpoints/sccnn_model_5.pth')
+# model.load_model('checkpoints/sccnn_model_120.pth')
+model.load_model('model/statedict.pth')
 print('Loading finished!')
 
 evaluator.run(test_dl)

@@ -69,6 +69,16 @@ class softmaxSCCNN(nn.Module):
     # We will wrap this with a dataloader with batch_size=1 and then combine the predictions for each batch. Finally we will compare
     # def evaluate_NEP(self, nep_dataset):
 
+    def save_model(self, epoch, all=False):
+        """
+        Saves the model. If _all_ is true then it will save the whole model, otherwise only its parameters.
+        """
+        filename = 'checkpoints/sccnn_model_{}.pth'.format(epoch)
+        if all:
+            torch.save(self, filename)
+        else:
+            torch.save(self.state_dict(), filename)
+
     def load_model(self, filename, all=False):
         """
         Loads a model. If _all_ is true then it will load a whole model, otherwise only its parameters.
@@ -113,19 +123,10 @@ class softmaxSCCNN(nn.Module):
                         F1,
                         np.sum(F1*self.class_weights.numpy())))
         
-        # Check to see if the learning rate scheduler is working correctly
-        # @trainer.on(Events.EPOCH_COMPLETED)
-        def check_grads(trainer):
-            check = True
-            max_lr = 0.
-            if True:
-                for g in optimizer.param_groups:
-                    check = check and g['lr'] == 0.01
-                    max_lr = g['lr']
-                print('Biggest learning rate at epoch {} start is {}'.format(
-                trainer.state.epoch,
-                max_lr
-            ))
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def saver(trainer):
+            if trainer.state.epoch % params.save_interval == 0:
+                self.save_model(trainer.state.epoch)
 
         # Instead of the LR scheduler, since it was not possible to successfully
         # install from github on tcs111
