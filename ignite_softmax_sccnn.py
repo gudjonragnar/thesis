@@ -136,7 +136,7 @@ class softmaxSCCNN(nn.Module):
                 change_lr(optimizer)
         
         checkpointer = ModelCheckpoint('checkpoints', 'sccnn', save_interval=5, create_dir=True, require_empty=False)
-        trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': self})
+        # trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'model': self})
         # trainer.add_event_handler(Events.EPOCH_STARTED, scheduler)
 
         print("Start training!")
