@@ -14,15 +14,15 @@ from mark_centers import mark_cen
 class ClassificationDataset(Dataset):
     """ Dataset containing histological tissue scans """
 
-    def __init__(self, root_dir, train=True, shift=None, transform=None):
+    def __init__(self, root_dir, width=27, height=27, train=True, shift=None, transform=None):
         self.root_dir = root_dir
         self.train = train
         self.items = np.load(os.path.join(root_dir,'{}_list.npy'.format('train' if self.train else 'test')))  #.item()
         # self.dirs = np.array([[d]*7 for d in os.listdir(self.root_dir) if os.path.isdir(os.path.join(self.root_dir, d))]).flatten()
         self.transform = transform
         self.shift = shift
-        self.width = 27
-        self.height = 27
+        self.width = width
+        self.height = height
         self.rotations = [0, 90, 180, 270]
         _mean = [0.485, 0.456, 0.406]
         _std = [0.229, 0.224, 0.225]
@@ -34,8 +34,9 @@ class ClassificationDataset(Dataset):
                 transforms.ToTensor()
                 # transforms.Normalize(_mean, _std)
             ])
-        self.offset = np.array([13,13])
-        self.pad = 20
+        offset_half = (self.width-1)/2 if self.width % 2 == 1 else self.width/2
+        self.offset = np.array([offset_half, offset_half])
+        self.pad = 25
 
     def __len__(self):
         return len(self.items)
