@@ -2,7 +2,7 @@ from ignite_softmax_sccnn import softmaxSCCNN
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import params
+import rccnet_params as params
 import numpy as np
 import os
 import time
@@ -56,10 +56,12 @@ if __name__ == '__main__':
     class_weights = torch.tensor([class_weight_dict[i]/class_weight_dict['total'] for i in range(num_classes)], dtype=torch.float)
     model = RCCnet(loss_weights=class_weights, num_classes=num_classes)
 
-    optimizer = torch.optim.SGD(model.parameters(), 
-        lr=params.lr, 
-        weight_decay=params.weight_decay,
-        momentum=params.momentum)
+    # optimizer = torch.optim.SGD(model.parameters(), 
+    #     lr=params.lr, 
+    #     weight_decay=params.weight_decay,
+    #     momentum=params.momentum)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=params.lr, betas=(0.9, 0.99))
     
     criterion = nn.NLLLoss(weight=model.class_weights)
 

@@ -108,7 +108,7 @@ class softmaxSCCNN(nn.Module):
         # Print out metrics with some defined interval (if statement)
         @trainer.on(Events.EPOCH_COMPLETED)
         def validate(trainer):
-            if trainer.state.epoch % 1 == 0:
+            if trainer.state.epoch % params.eval_interval == 0:
                 evaluator.run(val_loader)
                 metrics = evaluator.state.metrics
                 F1 = (2*metrics['precision']*metrics['recall']/(metrics['precision']+metrics['recall'])).numpy()
@@ -133,7 +133,7 @@ class softmaxSCCNN(nn.Module):
         # install from github on tcs111
         @trainer.on(Events.EPOCH_COMPLETED)
         def anneal_lr(trainer):
-            if trainer.state.epoch in params.lr_decay_epochs:
+            if trainer.state.epoch in params.lr_decay_epochs and self.model_name == 'sccnn':
                 change_lr(optimizer)
         
         checkpointer = ModelCheckpoint('checkpoints', 'sccnn', save_interval=5, create_dir=True, require_empty=False)
