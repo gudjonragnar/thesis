@@ -1,0 +1,14 @@
+root_dir = "../CRCHistoPhenotypes_2016_04_28/Classification"
+dropout_p = 0.5
+num_classes = 4
+num_workers = 8
+lr = 6e-5
+weight_decay = 5e-4
+momentum = 0.9
+batch_size = 100
+epochs = 4
+multiples = 1
+lr_decay_epochs = [2, 4]
+shift = 4
+save_interval = 20
+eval_interval = 20
