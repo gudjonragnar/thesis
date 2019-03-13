@@ -26,6 +26,7 @@ class softmaxSCCNN(nn.Module):
         self.num_classes = num_classes
         self.p = dropout_p
         self.class_weights = loss_weights
+        self.model_name = 'sccnn'
 
 
         # Layers
@@ -73,7 +74,7 @@ class softmaxSCCNN(nn.Module):
         """
         Saves the model. If _all_ is true then it will save the whole model, otherwise only its parameters.
         """
-        filename = 'checkpoints/sccnn_model_{}.pth'.format(epoch)
+        filename = 'checkpoints/{}_model_{}.pth'.format(self.model_name, epoch)
         if all:
             torch.save(self, filename)
         else:
