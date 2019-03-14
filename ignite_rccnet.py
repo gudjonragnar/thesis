@@ -24,18 +24,29 @@ class RCCnet(softmaxSCCNN):
         self.fc2 = nn.Linear(512, 512)
         self.fc3 = nn.Linear(512, self.num_classes)
 
+        # Batch Norm
+        self.bn1 = nn.BatchNorm2d(num_features=32)
+        self.bn2 = nn.BatchNorm2d(num_features=64)
+        self.bn3 = nn.BatchNorm1d(num_features=512)
+
     def forward(self, X):
         y = F.relu(self.c1(X))
+        y = self.bn1(y)
         y = F.relu(self.c2(y))
+        y = self.bn1(y)
         y = F.max_pool2d(y, 2, 2)
         y = F.relu(self.c3(y))
+        y = self.bn2(y)
         y = F.relu(self.c4(y))
+        y = self.bn2(y)
         y = F.max_pool2d(y, 2, 2)
         y = y.view(-1, 6*6*64)
         y = F.relu(self.fc1(y))
         y = F.dropout(y, p=self.p)
+        y = self.bn3(y)
         y = F.relu(self.fc2(y))
         y = F.dropout(y, p=self.p)
+        y = self.bn3(y)
         y = F.log_softmax(self.fc3(y), dim=1)
 
         return y
