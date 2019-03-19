@@ -27,6 +27,7 @@ class softmaxSCCNN(nn.Module):
         self.p = dropout_p
         self.class_weights = loss_weights
         self.model_name = 'sccnn'
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
         # Layers
@@ -98,8 +99,8 @@ class softmaxSCCNN(nn.Module):
         """
         if init:
             self.apply(init_weights)
-        trainer = create_supervised_trainer(self, optimizer, criterion)
-        evaluator = create_supervised_evaluator(self, 
+        trainer = create_supervised_trainer(self, optimizer, criterion, device=self.device)
+        evaluator = create_supervised_evaluator(self, device=self.device,
             metrics={'accuracy': Accuracy(), 'precision': Precision(), 'recall': Recall(), 'loss': Loss(criterion)})
 
         # step_scheduler = MultiStepLR(optimizer, milestones=[60, 100], gamma=0.1)
