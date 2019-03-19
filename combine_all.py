@@ -31,9 +31,15 @@ for j, d in enumerate(dirs):
     mats = [scipy.io.loadmat(os.path.join(root_dir,d,filename.format(m)))['detection'] for m in mat_names]
     for i,m in enumerate(mats):
         for item in m:
+#             if mat_names[i] == 'inflammatory':
+#                 cla = 1
+#             else:
+#                 cla = 0
+#             l = [d, item, cla]
             l = [d, item, classes[mat_names[i]]]
             if j < 80:
                 class_count[i] += 1
+                # class_count[cla] += 1
                 class_count['total'] += 1
                 # train_dict[counter] = l
                 for _ in range(multiplier):
