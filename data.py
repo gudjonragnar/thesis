@@ -70,6 +70,9 @@ class ClassificationDataset(Dataset):
         else:
             net_input = transforms.ToTensor()(cropped_img)
 
+        # Subtract the mean of the batch
+        # net_input = net_input - torch.mean(net_input,0)
+
         target = torch.tensor(item[2], dtype=torch.long)
 
         return (net_input, target)

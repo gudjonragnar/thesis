@@ -28,6 +28,7 @@ class softmaxSCCNN(nn.Module):
         self.class_weights = loss_weights
         self.model_name = 'sccnn'
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.class_weights = self.class_weights.to(self.device)
 
 
         # Layers
@@ -112,7 +113,7 @@ class softmaxSCCNN(nn.Module):
             if trainer.state.epoch % params.eval_interval == 0:
                 evaluator.run(val_loader)
                 metrics = evaluator.state.metrics
-                F1 = (2*metrics['precision']*metrics['recall']/(metrics['precision']+metrics['recall'])).numpy()
+                F1 = (2*metrics['precision']*metrics['recall']/(metrics['precision']+metrics['recall'])).cpu().numpy()
                 F1[np.isnan(F1)] = 0
                 print(
                     ("After {} epochs, Accuracy = {:.4f}, Loss = {:.6f}\n\tPrec\t={}\n\tRecall\t={}\n\t"+ \
@@ -120,10 +121,10 @@ class softmaxSCCNN(nn.Module):
                     .format(trainer.state.epoch, 
                         metrics['accuracy'], 
                         metrics['loss'], 
-                        metrics['precision'].numpy(), 
-                        metrics['recall'].numpy(),
+                        metrics['precision'].cpu().numpy(), 
+                        metrics['recall'].cpu().numpy(),
                         F1,
-                        np.sum(F1*self.class_weights.numpy())))
+                        np.sum(F1*self.class_weights.cpu().numpy())))
         
         @trainer.on(Events.EPOCH_COMPLETED)
         def saver(trainer):
@@ -177,12 +178,12 @@ if __name__ == "__main__":
 
     # data = torch.rand(3,3,27,27)
 
-    # optimizer = torch.optim.Adam(net.parameters(), lr=10)
+    optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
     # optimizer = torch.optim.Adam(net.parameters(), lr=1, weight_decay=5e-4)
-    optimizer = torch.optim.SGD(model.parameters(), 
-        lr=params.lr, 
-        weight_decay=params.weight_decay,
-        momentum=params.momentum)
+    # optimizer = torch.optim.SGD(model.parameters(), 
+    #     lr=params.lr, 
+    #     weight_decay=params.weight_decay,
+    #     momentum=params.momentum)
     
     criterion = nn.NLLLoss(weight=model.class_weights)
 
