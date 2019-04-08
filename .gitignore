@@ -107,3 +107,5 @@ venv.bak/
 checkpoints*/
 params.py
 result.txt
+rcc_out.txt
+softmax_out.txt
