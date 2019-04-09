@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup as Soup
 import numpy as np
+import os
 
 def soupify_xml(filename):
     with open(filename) as f:
@@ -18,14 +19,25 @@ def process_object(obj, img_name):
     # Output is [path, tuple(center), class_name]?
     return [img_name, tuple(center), class_name]
 
-def process_soup(soup):
+def process_soup(soup, path):
     folder = soup.find_all('folder')[0].get_text()
     filename = soup.find_all('filename')[0].get_text()
-    path = soup.find_all('path')[0].get_text()
     objects = soup.find_all('object')
     centers = []
     for o in objects:
         centers.append(process_object(o, path))
+    return centers
 
+if __name__ == "__main__":
+    root_dir = "/Users/gudjonragnar/Documents/KTH/Thesis/DataLabeled"
+    all_centers = []
+    for root, dirs, files in os.walk(root_dir):
+        for file in files:
+            if (file.endswith('.xml')):
+                path = os.path.join(root,file)
+                soup = soupify_xml(path)
+                centers = process_soup(soup, path)
+                all_centers.extend(centers)
 
-soup = soupify_xml('../CRCHistoPhenotypes_2016_04_28/Classification/img4/img4.xml')
+    print(len(all_centers))
+    np.save(os.path.join(root_dir,'all_centers.npy'), all_centers)
