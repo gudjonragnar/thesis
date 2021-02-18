@@ -3,21 +3,13 @@ import torch.cuda
 import torch.nn as nn
 import torch.optim
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import StepLR
 import numpy as np
-import os
-import time
 from params import sccnn_params as params
+
 
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss, Precision, Recall
 from ignite.handlers import ModelCheckpoint
-from ignite.contrib.handlers.param_scheduler import LRScheduler
-from torch.optim.lr_scheduler import StepLR
-
-
-from torch.utils.data import DataLoader
-from data.dataset import ClassificationDataset
 
 
 class SCCNN(nn.Module):
@@ -187,61 +179,3 @@ def init_weights_linear(m):
     if type(m) == nn.Linear:
         nn.init.normal_(m.weight, std=0.02)
         m.bias.data.fill_(0.0)
-
-
-if __name__ == "__main__":
-    pass
-    # num_classes = params.num_classes
-    # batch_size = params.batch_size
-    # num_workers = params.num_workers
-    # root_dir = params.root_dir
-    # train_ds = ClassificationDataset(root_dir=root_dir, train=True, shift=params.shift)
-    # train_dl = DataLoader(
-    #     train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers
-    # )
-
-    # test_ds = ClassificationDataset(root_dir=root_dir, train=False)
-    # test_dl = DataLoader(test_ds, batch_size=batch_size, num_workers=num_workers)
-
-    # class_weight_dict = np.load(
-    #     os.path.join(root_dir, "class_weights.npy"), allow_pickle=True
-    # ).item()
-    # class_weights = torch.tensor(
-    #     [class_weight_dict[i] / class_weight_dict["total"] for i in range(num_classes)],
-    #     dtype=torch.float,
-    # )
-    # model = SCCNN(
-    #     loss_weights=class_weights, num_classes=num_classes, dropout_p=params.dropout_p
-    # )
-
-    # optimizer = torch.optim.Adam(model.parameters(), lr=params.lr)
-    # scheduler = None
-    # # optimizer = torch.optim.Adam(net.parameters(), lr=1, weight_decay=5e-4)
-    # # optimizer = torch.optim.SGD(model.parameters(),
-    # #     lr=params.lr,
-    # #     weight_decay=params.weight_decay,
-    # #     momentum=params.momentum)
-    # # step_scheduler = StepLR(optimizer, step_size=params.lr_step_size, gamma=0.1)
-    # # scheduler = LRScheduler(step_scheduler)
-
-    # criterion = nn.NLLLoss(weight=model.class_weights)
-
-    # def t(n=3):
-    #     time1 = time.time()
-    #     model.train_model(
-    #         train_dl,
-    #         optimizer,
-    #         criterion,
-    #         max_epochs=n,
-    #         val_loader=test_dl,
-    #         scheduler=scheduler,
-    #     )
-    #     time2 = time.time()
-    #     print(
-    #         "It took {:.5f} seconds to train {} epochs, average of {:.5f} sec/epoch".format(
-    #             (time2 - time1), n, (time2 - time1) / n
-    #         )
-    #     )
-
-    # # Uncomment for training
-    # t(params.epochs)
