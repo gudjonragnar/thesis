@@ -1,3 +1,4 @@
+from enum import Enum
 import os
 import torch
 import numpy as np
@@ -8,6 +9,11 @@ from torch.utils.data import Dataset
 from torchvision import utils, transforms
 from torchvision.transforms import functional
 from PIL import Image
+
+
+class DataSet(Enum):
+    CLASSIFICATION = "classification"
+    NEP = "nep"
 
 
 class ClassificationDataset(Dataset):

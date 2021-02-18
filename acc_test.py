@@ -1,74 +1,116 @@
+from utils import EnumAction
 import torch
 import params
 import numpy as np
 
-from ignite_softmax_sccnn import softmaxSCCNN
-from ignite_rccnet import RCCnet
-from data import NEPValidationDataset, ClassificationDataset
+from models.sccnn import SCCNN
+from models.rccnet import RCCnet
+from data.dataset import NEPValidationDataset, ClassificationDataset, DataSet
 from ignite.engine import create_supervised_evaluator
 from ignite.metrics import Accuracy, Precision, Recall
 from torch.utils.data import DataLoader
 
+
 def handler(output):
     pred, target = output
-    pred = torch.sum(pred, dim=0)/len(target)
-    stack = [pred]*len(target)
+    pred = torch.sum(pred, dim=0) / len(target)
+    stack = [pred] * len(target)
     return torch.stack(stack), target
+    # test_output = torch.tensor(
+    #     [[0.1, 0.1, 0.5, 0.3], [0.1, 0.1, 0.5, 0.3], [0.1, 0.1, 0.5, 0.3]]
+    # )
+    # test_target = torch.tensor([1, 1, 1])
 
-size = 32
+    # print(handler((test_output,test_target)))
 
-model = RCCnet()
-# model = softmaxSCCNN()
-nep_evaluator = create_supervised_evaluator(model, 
-    metrics={'acc': Accuracy(handler), 'rec': Recall(handler), 'prec': Precision(handler)})
-evaluator = create_supervised_evaluator(model,
-    metrics={'acc': Accuracy(), 'rec': Recall(), 'prec': Precision()})
 
-nep_test_ds = NEPValidationDataset(root_dir=params.root_dir, d=4)
-nep_test_dl = DataLoader(nep_test_ds, batch_size=len(nep_test_ds.shifts), num_workers=params.num_workers, drop_last=True)
+def evaluate(metrics):
+    F1 = (
+        2 * metrics["prec"] * metrics["rec"] / (metrics["prec"] + metrics["rec"])
+    ).numpy()
+    F1[np.isnan(F1)] = 0
+    print(
+        "Single patch:\n\taccuracy: {}\n\tprecision: {}\n\trecall: {}\n\tF1: {}".format(
+            metrics["acc"], metrics["prec"], metrics["rec"], F1
+        )
+    )
 
-test_ds = ClassificationDataset(root_dir=params.root_dir, width=size, height=size, train=False)
-test_dl = DataLoader(test_ds, batch_size=params.batch_size, num_workers=params.num_workers)
 
-# it = iter(test_dl)
-# print(next(it)[1])
+if __name__ == "__main__":
+    from argparse import ArgumentParser
 
-test_output = torch.tensor([
-    [.1, .1, .5, .3],
-    [.1, .1, .5, .3],
-    [.1, .1, .5, .3]
-])
-test_target = torch.tensor([1,1,1])
+    parser = ArgumentParser(description="Runs training for sccnet or rccnet")
+    parser.add_argument(
+        "-m",
+        "--model",
+        dest="model",
+        choices=["sccnn", "rccnet"],
+    )
+    parser.add_argument(
+        "-d",
+        "--dataset",
+        dest="dataset",
+        type=DataSet,
+        action=EnumAction,
+        default=DataSet.CLASSIFICATION,
+    )
+    parser.add_argument(
+        "-p",
+        "--model-path",
+        dest="path",
+        type=str,
+    )
 
-# print(handler((test_output,test_target)))
-evaluator.run(test_dl)
-# nep_evaluator.run(nep_test_dl)
-metrics = evaluator.state.metrics
-F1 = (2*metrics['prec']*metrics['rec']/(metrics['prec']+metrics['rec'])).numpy()
-F1[np.isnan(F1)] = 0
-print('Single patch:\n\taccuracy: {}\n\tprecision: {}\n\trecall: {}\n\tF1: {}'.
-    format(metrics['acc'],metrics['prec'],metrics['rec'],F1))
-# nep_metrics = nep_evaluator.state.metrics
-# F1 = (2*nep_metrics['prec']*nep_metrics['rec']/(nep_metrics['prec']+nep_metrics['rec'])).numpy()
-# F1[np.isnan(F1)] = 0
-# print('NEP:\n\taccuracy: {}\n\tprecision: {}\n\trecall: {}\n\tF1: {}'.
-#     format(nep_metrics['acc'],nep_metrics['prec'],nep_metrics['rec'],F1))
+    args = parser.parse_args()
 
-print('Loading trained model!')
-model.load_model('checkpoints/rccnet_model_2.pth')
-# model.load_model('checkpoints/sccnn_model_130.pth',all=True)
-# model = torch.load('checkpoints/sccnn_model_130.pth')
-print('Loading finished!')
+    if args.model == "sccnn":
+        model = SCCNN()
+        size = 27
+    elif args.model == "rccnet":
+        model = RCCnet()
+        size = 32
+    else:
+        raise Exception("Chosen model not supported")
 
-evaluator.run(test_dl)
-# nep_evaluator.run(nep_test_dl)
-metrics = evaluator.state.metrics
-F1 = (2*metrics['prec']*metrics['rec']/(metrics['prec']+metrics['rec'])).numpy()
-F1[np.isnan(F1)] = 0
-print('Single patch:\n\taccuracy: {}\n\tprecision: {}\n\trecall: {}\n\tF1: {}'.
-    format(metrics['acc'],metrics['prec'],metrics['rec'],F1))
-# nep_metrics = nep_evaluator.state.metrics
-# F1 = (2*nep_metrics['prec']*nep_metrics['rec']/(nep_metrics['prec']+nep_metrics['rec'])).numpy()
-# F1[np.isnan(F1)] = 0
-# print('NEP:\n\taccuracy: {}\n\tprecision: {}\n\trecall: {}\n\tF1: {}'.
-#     format(nep_metrics['acc'],nep_metrics['prec'],nep_metrics['rec'],F1))
+    if args.dataset == DataSet.CLASSIFICATION:
+        evaluator = create_supervised_evaluator(
+            model, metrics={"acc": Accuracy(), "rec": Recall(), "prec": Precision()}
+        )
+        test_ds = ClassificationDataset(
+            root_dir=params.root_dir, width=size, height=size, train=False
+        )
+        test_dl = DataLoader(
+            test_ds, batch_size=params.batch_size, num_workers=params.num_workers
+        )
+    elif args.dataset == DataSet.NEP:
+        evaluator = create_supervised_evaluator(
+            model,
+            metrics={
+                "acc": Accuracy(handler),
+                "rec": Recall(handler),
+                "prec": Precision(handler),
+            },
+        )
+        test_ds = NEPValidationDataset(root_dir=params.root_dir, d=4)
+        test_dl = DataLoader(
+            test_ds,
+            batch_size=len(test_ds.shifts),
+            num_workers=params.num_workers,
+            drop_last=True,
+        )
+    else:
+        raise Exception("Chosen dataset not available")
+
+    print(f"Chosen model: {args.model}, chosen dataset: {args.dataset.value}")
+
+    evaluator.run(test_dl)
+    metrics = evaluator.state.metrics
+    evaluate(metrics)
+
+    print("Loading trained model!")
+    model.load_model(args.path)
+    print("Loading finished!")
+
+    evaluator.run(test_dl)
+    metrics = evaluator.state.metrics
+    evaluate(metrics)

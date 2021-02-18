@@ -1,4 +1,4 @@
-from models.ignite_softmax_sccnn import softmaxSCCNN
+from models.sccnn import SCCNN
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from data.dataset import ClassificationDataset
 
 
-class RCCnet(softmaxSCCNN):
+class RCCnet(SCCNN):
     def __init__(
         self,
         num_classes: int = 4,

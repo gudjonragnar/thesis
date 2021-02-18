@@ -31,15 +31,19 @@ counter = 0
 test_counter = 0
 multiplier = params.multiples
 for j, dir in enumerate(dirs):
+    # Iterate through all the images (img1, img2, ...)
     mats = [
         scipy.io.loadmat(os.path.join(root_dir, dir, f"{dir}_{mat}.mat"))["detection"]
         for mat in mat_names
     ]
     for i, mat in enumerate(mats):
+        # Iterate through the different cell types
         for center in mat:
+            # Add each nucleus to a dataset
             sample = [dir, *center, classes[mat_names[i]]]
             # TODO: Set to 80 again
             if j < 30:  # 80/20 split
+                # TODO: Do this splitting properly (shuffle and then split)
                 class_count[i] += 1
                 class_count["total"] += 1
                 for _ in range(multiplier):

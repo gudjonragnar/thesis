@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader
 from data.dataset import ClassificationDataset
 
 
-class softmaxSCCNN(nn.Module):
+class SCCNN(nn.Module):
     """
     A Convolutional neural network with a softmax classifier SC-CNN implemented in Sirunakunwattana et al.
     """
@@ -31,7 +31,7 @@ class softmaxSCCNN(nn.Module):
         dropout_p=0.2,
         loss_weights=None,
     ):
-        super(softmaxSCCNN, self).__init__()
+        super(SCCNN, self).__init__()
         # Globals
         self.num_classes = num_classes
         self.p = dropout_p
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     #     [class_weight_dict[i] / class_weight_dict["total"] for i in range(num_classes)],
     #     dtype=torch.float,
     # )
-    # model = softmaxSCCNN(
+    # model = SCCNN(
     #     loss_weights=class_weights, num_classes=num_classes, dropout_p=params.dropout_p
     # )
 

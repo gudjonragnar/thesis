@@ -1,5 +1,5 @@
-from enum import Enum, auto
-from models.utils import EnumAction
+from enum import Enum
+from utils import EnumAction
 import os
 import numpy as np
 from typing import Union
@@ -11,12 +11,12 @@ from ignite.contrib.handlers.param_scheduler import LRScheduler
 from torch.optim.lr_scheduler import StepLR
 
 from data.dataset import ClassificationDataset
-from models.ignite_rccnet import RCCnet
-from models.ignite_softmax_sccnn import softmaxSCCNN
+from models.rccnet import RCCnet
+from models.sccnn import SCCNN
 from params import Params, sccnn_params, rccnet_params
 
 
-Model = Union[softmaxSCCNN, RCCnet]
+Model = Union[SCCNN, RCCnet]
 
 
 class OptimizerType(Enum):
@@ -29,7 +29,7 @@ def train(model_class: Model, params: Params, optim_type: OptimizerType):
     batch_size = params.batch_size
     num_workers = params.num_workers
     root_dir = params.root_dir
-    if model_class == softmaxSCCNN:
+    if model_class == SCCNN:
         width = height = 27
     elif model_class == RCCnet:
         width = height = 32
@@ -103,12 +103,17 @@ if __name__ == "__main__":
         choices=["sccnn", "rccnet"],
     )
     parser.add_argument(
-        "-o", "--optimizer", dest="optim", type=OptimizerType, action=EnumAction
+        "-o",
+        "--optimizer",
+        dest="optim",
+        type=OptimizerType,
+        action=EnumAction,
+        default=OptimizerType.ADAM,
     )
 
     args = parser.parse_args()
 
     if args.network == "sccnn":
-        train(softmaxSCCNN, sccnn_params, args.optim)
+        train(SCCNN, sccnn_params, args.optim)
     elif args.network == "rccnet":
         train(RCCnet, rccnet_params, args.optim)

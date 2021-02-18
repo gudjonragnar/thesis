@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 """
-A script to extract centers from xml for labeled data
+A script to extract centers from xml for labeled data. The xml is the output of LabelIMG.
 """
 
 
