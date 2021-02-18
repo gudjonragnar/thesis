@@ -2,7 +2,7 @@ import os
 import torch
 import numpy as np
 from torch.tensor import Tensor
-import params
+from params import sccnn_params as params
 
 from torch.utils.data import Dataset
 from torchvision import utils, transforms

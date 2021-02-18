@@ -1,7 +1,7 @@
 import scipy.io
 import numpy as np
 import os
-import params
+from params import sccnn_params as params
 
 from collections import defaultdict
 
@@ -38,7 +38,8 @@ for j, dir in enumerate(dirs):
     for i, mat in enumerate(mats):
         for center in mat:
             sample = [dir, *center, classes[mat_names[i]]]
-            if j < 80:  # 80/20 split
+            # TODO: Set to 80 again
+            if j < 30:  # 80/20 split
                 class_count[i] += 1
                 class_count["total"] += 1
                 for _ in range(multiplier):
@@ -47,6 +48,7 @@ for j, dir in enumerate(dirs):
             else:
                 test_list.append(np.array(sample))
                 test_counter += 1
+
 
 np.random.shuffle(train_list)
 np.random.shuffle(test_list)
