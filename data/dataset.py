@@ -11,9 +11,14 @@ from torchvision.transforms import functional
 from PIL import Image
 
 
-class DataSet(Enum):
+class DataSetType(Enum):
     CLASSIFICATION = "classification"
     NEP = "nep"
+
+
+class DataSet(Enum):
+    KI = "ki"
+    CRC = "crc"
 
 
 class ClassificationDataset(Dataset):
@@ -57,17 +62,16 @@ class ClassificationDataset(Dataset):
     def __len__(self):
         return len(self.items)
 
-    def load_img(self, dir_name) -> Tensor:
-        img_name = os.path.join(self.root_dir, dir_name, "{}.bmp".format(dir_name))
-        img_pil = Image.open(img_name)
+    def load_img(self, img_path) -> Tensor:
+        img_pil = Image.open(img_path)
         img_pil.load()
         img = transforms.Pad(self.pad).forward(img_pil)
         img_pil.close()
         return img
 
     def __getitem__(self, idx):
-        dir_name, x, y, cell_class = self.items[idx]
-        img_pil = self.load_img(dir_name)
+        img_path, x, y, cell_class = self.items[idx]
+        img_pil = self.load_img(img_path)
 
         center = np.array([float(x), float(y)])
         if self.shift:
@@ -134,5 +138,5 @@ class NEPValidationDataset(ClassificationDataset):
 if __name__ == "__main__":
     ds = ClassificationDataset(root_dir=params.root_dir)
     item = ds.__getitem__(np.random.randint(0, len(ds)))
-    utils.save_image(item[0], fp="/Users/gudjonragnar/Desktop/test.png")
+    utils.save_image(item[0], fp="/tmp/test.png")
     print(item[1])

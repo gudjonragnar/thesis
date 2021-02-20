@@ -6,7 +6,7 @@ from params import sccnn_params as params
 from collections import defaultdict
 
 """
-This script creates a train and test dataset split.
+This script creates a train and test dataset split for the CRC dataset.
 
 It creates two files 'train_list.npy' and 'test_list.npy' that each contains a numpy array.
 Each row in the array has format [dir_name, x_coord, y_coord, class] (dir_name is img1, img2, etc.).
@@ -14,7 +14,9 @@ Each row in the array has format [dir_name, x_coord, y_coord, class] (dir_name i
 It also writes the class weights that can be used to normalize the classes during training.
 """
 
-root_dir = params.root_dir
+root_dir = params.crc_root_dir
+if not root_dir:
+    raise Exception("CRC_ROOT_DIR env variable is missing")
 dirs = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
 mat_names = ["others", "fibroblast", "epithelial", "inflammatory"]
 
@@ -36,13 +38,13 @@ for j, dir in enumerate(dirs):
         scipy.io.loadmat(os.path.join(root_dir, dir, f"{dir}_{mat}.mat"))["detection"]
         for mat in mat_names
     ]
+    img_path = f"{root_dir}/{dir}/{dir}.bmp"
     for i, mat in enumerate(mats):
         # Iterate through the different cell types
         for center in mat:
             # Add each nucleus to a dataset
-            sample = [dir, *center, classes[mat_names[i]]]
-            # TODO: Set to 80 again
-            if j < 30:  # 80/20 split
+            sample = [img_path, *center, classes[mat_names[i]]]
+            if j < 80:  # 80/20 split
                 # TODO: Do this splitting properly (shuffle and then split)
                 class_count[i] += 1
                 class_count["total"] += 1

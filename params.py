@@ -1,6 +1,12 @@
 from dataclasses import dataclass
+import os
+from typing import Optional
 
-root_dir = "/home/gudjon/CRCHistoPhenotypes_2016_04_28/Classification"
+crc_root_dir = os.getenv("CRC_ROOT_DIR")
+ki_root_dir = os.getenv("KI_ROOT_DIR")
+
+if not ki_root_dir:
+    raise Exception("KI_ROOT_DIR env variable is not set")
 
 
 @dataclass
@@ -18,7 +24,8 @@ class Params:
     save_interval: int
     shift: int
     lr_step_size: int
-    root_dir: str = root_dir
+    root_dir: str = ki_root_dir
+    crc_root_dir: Optional[str] = crc_root_dir
 
 
 sccnn_params = Params(
