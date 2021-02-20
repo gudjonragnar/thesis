@@ -1,3 +1,4 @@
+from argparse import ArgumentDefaultsHelpFormatter
 from enum import Enum
 from utils import EnumAction
 import os
@@ -10,7 +11,7 @@ import time
 from ignite.contrib.handlers.param_scheduler import LRScheduler
 from torch.optim.lr_scheduler import StepLR
 
-from data.dataset import ClassificationDataset
+from data.dataset import ClassificationDataset, DataSet
 from models.rccnet import RCCnet
 from models.sccnn import SCCNN
 from params import Params, sccnn_params, rccnet_params
@@ -24,11 +25,16 @@ class OptimizerType(Enum):
     SGD = "sgd"
 
 
-def train(model_class: Model, params: Params, optim_type: OptimizerType):
+def train(
+    model_class: Model, params: Params, optim_type: OptimizerType, dataset: DataSet
+):
+    if dataset == DataSet.CRC:
+        root_dir = params.crc_root_dir
+    else:
+        root_dir = params.root_dir
     num_classes = params.num_classes
     batch_size = params.batch_size
     num_workers = params.num_workers
-    root_dir = params.root_dir
     if model_class == SCCNN:
         width = height = 27
     elif model_class == RCCnet:
@@ -95,12 +101,16 @@ def train(model_class: Model, params: Params, optim_type: OptimizerType):
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser(description="Runs training for sccnet or rccnet")
+    parser = ArgumentParser(
+        description="Runs training for sccnet or rccnet",
+        formatter_class=ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
-        "-n",
-        "--network",
-        dest="network",
+        "-m",
+        "--model",
+        dest="model",
         choices=["sccnn", "rccnet"],
+        help="Choose which model to use",
     )
     parser.add_argument(
         "-o",
@@ -109,11 +119,21 @@ if __name__ == "__main__":
         type=OptimizerType,
         action=EnumAction,
         default=OptimizerType.ADAM,
+        help="Choose which optimizer to use",
+    )
+    parser.add_argument(
+        "-d",
+        "--dataset",
+        dest="dataset",
+        type=DataSet,
+        action=EnumAction,
+        default=DataSet.KI,
+        help="Choose which dataset to use",
     )
 
     args = parser.parse_args()
 
-    if args.network == "sccnn":
-        train(SCCNN, sccnn_params, args.optim)
-    elif args.network == "rccnet":
-        train(RCCnet, rccnet_params, args.optim)
+    if args.model == "sccnn":
+        train(SCCNN, sccnn_params, args.optim, args.dataset)
+    elif args.model == "rccnet":
+        train(RCCnet, rccnet_params, args.optim, args.dataset)

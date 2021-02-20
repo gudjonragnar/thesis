@@ -5,7 +5,7 @@ import numpy as np
 
 from models.sccnn import SCCNN
 from models.rccnet import RCCnet
-from data.dataset import NEPValidationDataset, ClassificationDataset, DataSet
+from data.dataset import NEPValidationDataset, ClassificationDataset, DataSetType
 from ignite.engine import create_supervised_evaluator
 from ignite.metrics import Accuracy, Precision, Recall
 from torch.utils.data import DataLoader
@@ -39,7 +39,7 @@ def evaluate(metrics):
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser(description="Runs training for sccnet or rccnet")
+    parser = ArgumentParser(description="Accuracy test")
     parser.add_argument(
         "-m",
         "--model",
@@ -48,11 +48,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-d",
-        "--dataset",
-        dest="dataset",
-        type=DataSet,
+        "--dataset-type",
+        dest="dataset-type",
+        type=DataSetType,
         action=EnumAction,
-        default=DataSet.CLASSIFICATION,
+        default=DataSetType.CLASSIFICATION,
     )
     parser.add_argument(
         "-p",
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     else:
         raise Exception("Chosen model not supported")
 
-    if args.dataset == DataSet.CLASSIFICATION:
+    if args.dataset == DataSetType.CLASSIFICATION:
         evaluator = create_supervised_evaluator(
             model, metrics={"acc": Accuracy(), "rec": Recall(), "prec": Precision()}
         )
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         test_dl = DataLoader(
             test_ds, batch_size=params.batch_size, num_workers=params.num_workers
         )
-    elif args.dataset == DataSet.NEP:
+    elif args.dataset == DataSetType.NEP:
         evaluator = create_supervised_evaluator(
             model,
             metrics={
